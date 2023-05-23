@@ -5,10 +5,12 @@ require_once __DIR__ . '/../../vendor/autoload.php';
 use voku\helper\HtmlDomParser;
 
 function scrapeShopPage($paginationNumber) {
-    $productDataList = array();
+    $newsDataList = array();
 
     $curl = curl_init();
-    curl_setopt($curl, CURLOPT_URL, "https://scrapeme.live/shop/page/$paginationNumber");
+
+    $pageLink = $paginationNumber == 0 ? "https://news.ycombinator.com" : "https://news.ycombinator.com/?p=$paginationNumber";
+    curl_setopt($curl, CURLOPT_URL, $pageLink);
     curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
     curl_setopt($curl, CURLOPT_USERAGENT, USER_AGENT);
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
@@ -17,28 +19,34 @@ function scrapeShopPage($paginationNumber) {
 
     $paginationHtmlDomParser = HtmlDomParser::str_get_html($pageHtml);
 
-    // retrieving the list of products on the page
-    $productElements = $paginationHtmlDomParser->find("li.product");
+    // retrieving the list of newses on the page
+    $newsElements = $paginationHtmlDomParser->find("tr.athing");
 
-    foreach ($productElements as $productElement) {
-        $productDataList[] = scrapeProduct($productElement);
+    foreach ($newsElements as $newsElement) {
+        $newsDataList[] = scrapeNews($newsElement);
     }
 
-    return $productDataList;
+    return $newsDataList;
 }
 
-function scrapeProduct($productElement) {
-    // extracting the product data
-    $url = $productElement->findOne("a")->getAttribute("href");
-    $image = $productElement->findOne("img")->getAttribute("src");
-    $name = $productElement->findOne("h2")->text;
-    $price = $productElement->findOne(".price span")->text;
+function scrapeNews($newsElement) {
+    // extracting the news data
+    $title = $newsElement->findOne("td.title span a")->text;
+    $created = $newsElement->next_sibling()->findOne("span.age")->getAttribute("title");
+    $externalLink = $newsElement->findOne("span.titleline a")->getAttribute("href");
+    $internalLink = "";
+    foreach ($newsElement->next_sibling()->find('a') as $sublineAnchor) {
+        $sublineAnchorHref = $sublineAnchor->getAttribute("href");
+        if (strpos($sublineAnchorHref, "item?id=") !== false) {
+            $internalLink = $sublineAnchorHref;
+        }
+    }
 
-    // transforming the product data in an associative array
+    // transforming the news data in an associative array
     return array(
-        "url" => $url,
-        "image" => $image,
-        "name" => $name,
-        "price" => $price
+        "title" => $title,
+        "created" => $created,
+        "internalLink" => $internalLink,
+        "externalLink" => $externalLink,
     );
 }
