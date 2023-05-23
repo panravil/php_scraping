@@ -4,6 +4,11 @@ require_once __DIR__ . '/../../vendor/autoload.php';
 
 use voku\helper\HtmlDomParser;
 
+/**
+ * @param int $paginationNumber The pagination number
+ * 
+ * @return array An associative array containing the news data.
+ */
 function scrapeShopPage($paginationNumber) {
     $newsDataList = array();
 
@@ -29,6 +34,11 @@ function scrapeShopPage($paginationNumber) {
     return $newsDataList;
 }
 
+/**
+ * @param object $newsElement The dom element of news
+ * 
+ * @return array An array containing the title, created Datetime, internal link and external link of the news.
+ */
 function scrapeNews($newsElement) {
     // extracting the news data
     $title = $newsElement->findOne("td.title span a")->text;
